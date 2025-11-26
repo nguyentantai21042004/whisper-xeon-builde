@@ -49,6 +49,7 @@ RUN mkdir -p /app/build/bin && \
     -lggml-base \
     -lpthread \
     -lm \
+    -Wl,-rpath,/app/build/ggml/src:/app/build/src \
     -o /app/build/bin/whisper-quantize && \
     echo "✓ quantize tool built successfully"
 
@@ -59,11 +60,11 @@ RUN chmod +x models/download-ggml-model.sh
 
 # Download and quantize Small model
 RUN ./models/download-ggml-model.sh small \
-    && ./build/bin/whisper-quantize models/ggml-small.bin models/ggml-small-q5_1.bin q5_1
+    && LD_LIBRARY_PATH=/app/build/ggml/src:/app/build/src:$LD_LIBRARY_PATH ./build/bin/whisper-quantize models/ggml-small.bin models/ggml-small-q5_1.bin q5_1
 
 # Download and quantize Medium model
 RUN ./models/download-ggml-model.sh medium \
-    && ./build/bin/whisper-quantize models/ggml-medium.bin models/ggml-medium-q5_1.bin q5_1
+    && LD_LIBRARY_PATH=/app/build/ggml/src:/app/build/src:$LD_LIBRARY_PATH ./build/bin/whisper-quantize models/ggml-medium.bin models/ggml-medium-q5_1.bin q5_1
 
 # Stage 2: Organizer
 FROM ubuntu:22.04 AS organizer
