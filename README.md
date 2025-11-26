@@ -222,10 +222,22 @@ docker build --no-cache -t whisper-xeon-builder .
 
 ## Testing
 
-Verify your build works correctly:
+**Note**: The built artifacts are Linux binaries and must be tested on Linux (or in a Linux container).
+
+Test on Linux:
 
 ```bash
 python3 test_artifacts.py
+```
+
+Test in Docker container (from macOS/Windows):
+
+```bash
+docker run --rm \
+  -v $(pwd)/artifacts:/artifacts \
+  -v $(pwd)/test_artifacts.py:/test_artifacts.py \
+  ubuntu:22.04 \
+  bash -c "apt-get update -qq && apt-get install -y -qq python3 libgomp1 > /dev/null && python3 /test_artifacts.py"
 ```
 
 ## Contributing

@@ -17,3 +17,4 @@ lib = ctypes.CDLL("./libwhisper.so")
 ## System Requirements
 - Linux x86_64
 - CPU with AVX2 and FMA support
+- libgomp1 (OpenMP runtime)
