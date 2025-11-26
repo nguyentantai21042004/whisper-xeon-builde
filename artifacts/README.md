@@ -21,25 +21,32 @@ lib = ctypes.CDLL("./libwhisper.so")
 
 ## Uploading Artifacts to MinIO (Self-Hosted)
 
-To use the `push_to_minio.sh` script for uploading artifacts, you may need to provide your MinIO server connection info via environment variables.  
-**Example usage:**
+Simply run the upload script:
 
 ```bash
-export MINIO_IP=<your-minio-ip>
-export MINIO_PORT=<your-minio-port>
-export MINIO_ACCESS_KEY=<your-access-key>
-export MINIO_SECRET_KEY=<your-secret-key>
-export BUCKET=<your-bucket-name>
-# Run upload script from inside artifacts/ directory:
-bash push_to_minio.sh
+./push_to_minio.sh
 ```
 
-If you omit these, the script will default to:
-- MINIO_IP=127.0.0.1
-- MINIO_PORT=9000
-- MINIO_ACCESS_KEY=minioadmin
-- MINIO_SECRET_KEY=minioadmin
-- BUCKET=whisper-artifacts
+The script will **interactively ask** for your MinIO connection details with sensible defaults:
+- MinIO Server IP (default: 127.0.0.1)
+- MinIO Server Port (default: 9000)
+- Access Key (default: minioadmin)
+- Secret Key (default: minioadmin, hidden input)
+- Bucket Name (default: whisper-artifacts)
 
-**New:** The script now uses `curl` (no need for `mc` MinIO Client).  
-The script will automatically create the bucket if it does not exist, and upload both `whisper_small_xeon/` and `whisper_medium_xeon/` directories using MinIO's S3-compatible API.
+**For automated environments** (CI/CD), pre-set environment variables:
+
+```bash
+export MINIO_IP=192.168.1.100
+export MINIO_PORT=9000
+export MINIO_ACCESS_KEY=your-access-key
+export MINIO_SECRET_KEY=your-secret-key
+export BUCKET=whisper-artifacts
+./push_to_minio.sh  # Skips all prompts
+```
+
+**Features:**
+- Uses `curl` (no need for `mc` MinIO Client)
+- Auto-creates bucket if it doesn't exist
+- Uploads both `whisper_small_xeon/` and `whisper_medium_xeon/`
+- Uses MinIO's S3-compatible API

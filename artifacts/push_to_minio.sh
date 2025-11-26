@@ -1,14 +1,46 @@
 #!/bin/bash
 set -e
 
+echo "========================================="
+echo "  MinIO Upload Script - Whisper Artifacts"
+echo "========================================="
+echo ""
+
 # ====== Cấu hình MinIO selfhost bằng IP và Port ======
-# Thay đổi các biến sau cho phù hợp với MinIO của bạn:
-MINIO_IP=${MINIO_IP:-127.0.0.1}
-MINIO_PORT=${MINIO_PORT:-9000}
-MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
-MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
-BUCKET=${BUCKET:-whisper-artifacts}
+# Đọc từ biến môi trường hoặc yêu cầu nhập
+if [ -z "$MINIO_IP" ]; then
+    read -p "MinIO Server IP [127.0.0.1]: " MINIO_IP
+    MINIO_IP=${MINIO_IP:-127.0.0.1}
+fi
+
+if [ -z "$MINIO_PORT" ]; then
+    read -p "MinIO Server Port [9000]: " MINIO_PORT
+    MINIO_PORT=${MINIO_PORT:-9000}
+fi
+
+if [ -z "$MINIO_ACCESS_KEY" ]; then
+    read -p "MinIO Access Key [minioadmin]: " MINIO_ACCESS_KEY
+    MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+fi
+
+if [ -z "$MINIO_SECRET_KEY" ]; then
+    read -sp "MinIO Secret Key [minioadmin]: " MINIO_SECRET_KEY
+    echo ""
+    MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
+fi
+
+if [ -z "$BUCKET" ]; then
+    read -p "Bucket Name [whisper-artifacts]: " BUCKET
+    BUCKET=${BUCKET:-whisper-artifacts}
+fi
+
 MINIO_URL="http://$MINIO_IP:$MINIO_PORT"
+
+echo ""
+echo "Cấu hình:"
+echo "  Server: $MINIO_URL"
+echo "  Bucket: $BUCKET"
+echo ""
 
 # Kiểm tra curl đã được cài đặt
 if ! command -v curl &> /dev/null; then

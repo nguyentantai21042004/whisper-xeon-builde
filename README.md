@@ -119,14 +119,24 @@ Upload artifacts to MinIO object storage using curl (no need to install mc clien
 
 ```bash
 cd artifacts/
+./push_to_minio.sh
+```
 
-# Configure and upload (default: localhost MinIO)
-export MINIO_IP=127.0.0.1
+The script will interactively ask for MinIO connection details:
+- MinIO Server IP (default: 127.0.0.1)
+- MinIO Server Port (default: 9000)
+- Access Key (default: minioadmin)
+- Secret Key (default: minioadmin)
+- Bucket Name (default: whisper-artifacts)
+
+**For automated/CI environments**, set environment variables to skip prompts:
+
+```bash
+export MINIO_IP=192.168.1.100
 export MINIO_PORT=9000
-export MINIO_ACCESS_KEY=minioadmin
-export MINIO_SECRET_KEY=minioadmin
+export MINIO_ACCESS_KEY=your-access-key
+export MINIO_SECRET_KEY=your-secret-key
 export BUCKET=whisper-artifacts
-
 ./push_to_minio.sh
 ```
 
