@@ -37,6 +37,7 @@ arm_neon.h
 sync.sh
 libwhisper.a
 libwhisper.so
+libggml.so
 compile_commands.json
 
 examples/arm_neon.h
@@ -62,3 +63,6 @@ cmake-build-debug/
 local.properties
 .log
 .exe
+artifacts/**/*.bin
+artifacts/**/*.so
+artifacts/**/*.so.*
