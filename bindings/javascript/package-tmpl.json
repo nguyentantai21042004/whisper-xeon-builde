@@ -1,12 +1,7 @@
 {
-  "name": "whisper.cpp",
-  "version": "@PROJECT_VERSION@",
-  "description": "Whisper speech recognition (whisper.cpp)",
-  "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ggml-org/whisper.cpp.git"
-  },
-  "author": "ggml-org",
-  "license": "MIT"
+    "name": "whisper.cpp",
+    "version": "@PROJECT_VERSION@",
+    "description": "Whisper speech-to-text library",
+    "main": "index.js",
+    "private": true
 }
