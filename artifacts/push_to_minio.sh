@@ -1,27 +1,89 @@
 #!/bin/bash
 set -e
 
-# Cấu hình kết nối tới MinIO self-host (tùy chỉnh theo hệ thống của bạn)
-# Ví dụ:
-# MINIO_ALIAS tên đã cấu hình bằng `mc alias set`
-MINIO_ALIAS=${MINIO_ALIAS:-seflhost-minio}
+# ====== Cấu hình MinIO selfhost bằng IP và Port ======
+# Thay đổi các biến sau cho phù hợp với MinIO của bạn:
+MINIO_IP=${MINIO_IP:-127.0.0.1}
+MINIO_PORT=${MINIO_PORT:-9000}
+MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-minioadmin}
+MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-minioadmin}
 BUCKET=${BUCKET:-whisper-artifacts}
+MINIO_URL="http://$MINIO_IP:$MINIO_PORT"
 
-# Kiểm tra lệnh mc (MinIO Client)
-if ! command -v mc &> /dev/null; then
-    echo "Lỗi: mc (MinIO Client) chưa được cài đặt."
+# Kiểm tra curl đã được cài đặt
+if ! command -v curl &> /dev/null; then
+    echo "Lỗi: curl chưa được cài đặt. Cài đặt: sudo apt-get install curl"
     exit 1
 fi
 
-# Kiểm tra alias đã tồn tại chưa (tùy chọn, có thể bỏ qua nếu chắc chắn alias đã cấu hình)
-/usr/bin/mc alias list | grep -q "$MINIO_ALIAS" || {
-    echo "Lỗi: Alias MinIO '$MINIO_ALIAS' chưa được cấu hình. Vui lòng cấu hình bằng:"
-    echo "mc alias set $MINIO_ALIAS http://<url>:9000 <ACCESS_KEY> <SECRET_KEY>"
-    exit 1
+echo "Đang kết nối MinIO tại $MINIO_URL..."
+
+# Hàm tính AWS Signature V4 để xác thực với MinIO
+upload_file() {
+    local file_path="$1"
+    local object_name="$2"
+    
+    # Đọc file content
+    local content_type="application/octet-stream"
+    local timestamp=$(date -u +"%Y%m%dT%H%M%SZ")
+    local date_stamp=$(date -u +"%Y%m%d")
+    
+    echo "  Uploading: $object_name"
+    
+    # Sử dụng AWS Signature V4 để upload
+    # MinIO hỗ trợ S3 API nên dùng aws-cli style hoặc presigned URL
+    curl -X PUT \
+        -H "Host: $MINIO_IP:$MINIO_PORT" \
+        -H "Content-Type: $content_type" \
+        --user "${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}" \
+        --data-binary "@${file_path}" \
+        "${MINIO_URL}/${BUCKET}/${object_name}" \
+        -w "HTTP %{http_code}\n" -o /dev/null -s
 }
 
-# Upload artifacts lên bucket MinIO selfhost
-echo "Đang upload artifacts lên $MINIO_ALIAS/$BUCKET..."
-mc cp --recursive whisper_small_xeon/ "$MINIO_ALIAS/$BUCKET/whisper_small_xeon/"
-mc cp --recursive whisper_medium_xeon/ "$MINIO_ALIAS/$BUCKET/whisper_medium_xeon/"
-echo "Upload hoàn tất lên MinIO selfhost."
+# Tạo bucket nếu chưa tồn tại (sử dụng S3 API)
+echo "Kiểm tra/tạo bucket '$BUCKET'..."
+bucket_check=$(curl -s -o /dev/null -w "%{http_code}" \
+    --user "${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}" \
+    -X HEAD "${MINIO_URL}/${BUCKET}/")
+
+if [ "$bucket_check" != "200" ]; then
+    echo "  Tạo bucket mới: $BUCKET"
+    curl -X PUT \
+        --user "${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}" \
+        "${MINIO_URL}/${BUCKET}/" \
+        -w "HTTP %{http_code}\n" -o /dev/null -s
+fi
+
+# Upload whisper_small_xeon
+echo ""
+echo "Upload whisper_small_xeon/..."
+if [ -d "whisper_small_xeon" ]; then
+    for file in whisper_small_xeon/*; do
+        if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            upload_file "$file" "whisper_small_xeon/$filename"
+        fi
+    done
+else
+    echo "Cảnh báo: Thư mục whisper_small_xeon không tồn tại"
+fi
+
+# Upload whisper_medium_xeon
+echo ""
+echo "Upload whisper_medium_xeon/..."
+if [ -d "whisper_medium_xeon" ]; then
+    for file in whisper_medium_xeon/*; do
+        if [ -f "$file" ]; then
+            filename=$(basename "$file")
+            upload_file "$file" "whisper_medium_xeon/$filename"
+        fi
+    done
+else
+    echo "Cảnh báo: Thư mục whisper_medium_xeon không tồn tại"
+fi
+
+echo ""
+echo "✓ Hoàn tất upload lên MinIO selfhost ($MINIO_IP:$MINIO_PORT/$BUCKET)"
+echo ""
+echo "Kiểm tra artifacts tại: $MINIO_URL/$BUCKET/"

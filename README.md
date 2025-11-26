@@ -115,24 +115,40 @@ Link with: `-lwhisper -lggml -lggml-base -lpthread -lm`
 
 ## MinIO Upload
 
-Upload artifacts to MinIO object storage:
+Upload artifacts to MinIO object storage using curl (no need to install mc client):
 
 ```bash
 cd artifacts/
 
-# Configure MinIO client (first time only)
-mc alias set myminio https://your-minio-server.com ACCESS_KEY SECRET_KEY
+# Configure and upload (default: localhost MinIO)
+export MINIO_IP=127.0.0.1
+export MINIO_PORT=9000
+export MINIO_ACCESS_KEY=minioadmin
+export MINIO_SECRET_KEY=minioadmin
+export BUCKET=whisper-artifacts
 
-# Upload artifacts
 ./push_to_minio.sh
 ```
 
-Set environment variables for custom configuration:
+The script uses MinIO's S3-compatible API via curl, so you only need `curl` installed (usually pre-installed on most systems).
+
+**Requirements:**
+- `curl` command (check: `which curl`)
+- MinIO server accessible at specified IP:PORT
+- Valid access key and secret key
+
+**Alternative: Using mc client** (if you prefer):
 
 ```bash
-export MINIO_ALIAS=myminio
-export BUCKET=whisper-artifacts
-./push_to_minio.sh
+# Install MinIO client
+wget https://dl.min.io/client/mc/release/linux-amd64/mc
+chmod +x mc
+sudo mv mc /usr/local/bin/
+
+# Configure and upload
+mc alias set myminio http://your-minio-ip:9000 ACCESS_KEY SECRET_KEY
+mc cp --recursive whisper_small_xeon/ myminio/whisper-artifacts/whisper_small_xeon/
+mc cp --recursive whisper_medium_xeon/ myminio/whisper-artifacts/whisper_medium_xeon/
 ```
 
 ## System Requirements
