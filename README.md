@@ -33,9 +33,18 @@ Source Code → Docker Build → Optimized Artifacts → MinIO Storage
 docker build -t whisper-xeon-builder .
 
 # Extract artifacts from the container
-docker create --name temp whisper-xeon-builder
-docker cp temp:/release_artifacts ./artifacts
-docker rm temp
+docker create --name whisper-temp whisper-xeon-builder
+docker cp whisper-temp:/release_artifacts/. ./artifacts/
+docker rm whisper-temp
+```
+
+Or use this one-liner:
+
+```bash
+docker build -t whisper-xeon-builder . && \
+  docker create --name whisper-temp whisper-xeon-builder && \
+  docker cp whisper-temp:/release_artifacts/. ./artifacts/ && \
+  docker rm whisper-temp
 ```
 
 ### Artifact Structure
