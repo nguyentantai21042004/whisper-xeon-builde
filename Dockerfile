@@ -22,15 +22,35 @@ COPY . .
 # Build libwhisper.so with AVX2 and FMA optimizations
 # -DGGML_AVX2=ON and -DGGML_FMA=ON are usually default on x86, but we force them for Xeon optimization.
 # -DBUILD_SHARED_LIBS=ON to build libwhisper.so
+# -DWHISPER_BUILD_TESTS=OFF to skip tests directory (may be pruned)
+# -DWHISPER_BUILD_EXAMPLES=OFF to skip examples (most are pruned, we build quantize separately)
 RUN cmake -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DGGML_AVX2=ON \
     -DGGML_FMA=ON \
     -DBUILD_SHARED_LIBS=ON \
+    -DWHISPER_BUILD_TESTS=OFF \
+    -DWHISPER_BUILD_EXAMPLES=OFF \
     && cmake --build build --config Release -j$(nproc)
 
-# Build quantize tool (it might be built by default, but ensuring it exists)
-RUN cmake --build build --target quantize --config Release -j$(nproc)
+# Build quantize tool manually (compile directly since examples are disabled)
+RUN mkdir -p /app/build/bin && \
+    g++ -std=c++11 -O3 \
+    -I/app/include \
+    -I/app \
+    -I/app/ggml/include \
+    -I/app/examples \
+    /app/examples/quantize/quantize.cpp \
+    /app/examples/common-ggml.cpp \
+    -L/app/build/src \
+    -L/app/build/ggml/src \
+    -lwhisper \
+    -lggml \
+    -lggml-base \
+    -lpthread \
+    -lm \
+    -o /app/build/bin/whisper-quantize && \
+    echo "✓ quantize tool built successfully"
 
 # Download and Quantize Models
 # We need 'small' and 'medium' models.
@@ -39,11 +59,11 @@ RUN chmod +x models/download-ggml-model.sh
 
 # Download and quantize Small model
 RUN ./models/download-ggml-model.sh small \
-    && ./build/bin/quantize models/ggml-small.bin models/ggml-small-q5_1.bin q5_1
+    && ./build/bin/whisper-quantize models/ggml-small.bin models/ggml-small-q5_1.bin q5_1
 
 # Download and quantize Medium model
 RUN ./models/download-ggml-model.sh medium \
-    && ./build/bin/quantize models/ggml-medium.bin models/ggml-medium-q5_1.bin q5_1
+    && ./build/bin/whisper-quantize models/ggml-medium.bin models/ggml-medium-q5_1.bin q5_1
 
 # Stage 2: Organizer
 FROM ubuntu:22.04 AS organizer

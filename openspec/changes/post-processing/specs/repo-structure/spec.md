@@ -17,6 +17,15 @@ The following paths MUST be preserved:
 - `scripts/` (if applicable)
 - `push_to_minio.py` (or `.sh`)
 - `maintenance_prune.py`
+- `.cursor` (and related config files)
+- `.claude` (and related config files)
+- `.agent` (and related config files)
+
+### Requirement: Pruning Audit
+The pruning process MUST provide visibility into what is being preserved and why.
+
+#### Scenario: Logging
+The `maintenance_prune.py` script MUST log each preserved file along with the whitelist rule that matched it (e.g., "Keeping src/whisper.cpp (Matched: src/)").
 
 #### Scenario: Removed Paths
 The following paths MUST be removed:

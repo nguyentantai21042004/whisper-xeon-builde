@@ -5,8 +5,9 @@ The current repository contains a significant amount of unused code, bindings, e
 
 ## What Changes
 - **Repository Pruning**: Implement a "whitelist" strategy to remove all non-essential files and directories.
-    - **Keep**: `Dockerfile`, `src/`, `ggml/`, `include/`, `Makefile`, `CMakeLists.txt`, `.github/`, and essential scripts.
+    - **Keep**: `Dockerfile`, `src/`, `ggml/`, `include/`, `Makefile`, `CMakeLists.txt`, `.github/`, essential scripts, and IDE/Agent configs (`.cursor`, `.claude`, `.agent`).
     - **Remove**: `bindings/`, `tests/`, `samples/`, `models/`, and most `examples/`.
+    - **Audit**: The pruning script MUST log detailed information about which files are kept and why (matching rule), ensuring visibility into the process.
 - **Automation**: Create `maintenance_prune.py` to automate the cleanup process.
 - **Documentation Overhaul**: Replace the existing `README.md` with a concise, purpose-driven guide focusing on the build and deployment pipeline.
 
