@@ -21,7 +21,17 @@ lib = ctypes.CDLL("./libwhisper.so")
 
 ## Uploading Artifacts to MinIO (Self-Hosted)
 
-Simply run the upload script:
+### Option 1: Python Script (Recommended - Works with AWS Signature V4)
+
+```bash
+# Install boto3 if not already installed
+pip install boto3
+
+# Run upload script
+./push_to_minio.py
+```
+
+### Option 2: Bash Script (curl)
 
 ```bash
 ./push_to_minio.sh

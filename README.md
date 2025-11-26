@@ -115,11 +115,18 @@ Link with: `-lwhisper -lggml -lggml-base -lpthread -lm`
 
 ## MinIO Upload
 
-Upload artifacts to MinIO object storage using curl (no need to install mc client):
+### Recommended: Python Script (boto3)
+
+Upload artifacts using Python script with proper AWS Signature V4 authentication:
 
 ```bash
 cd artifacts/
-./push_to_minio.sh
+
+# Install boto3 (AWS SDK for Python)
+pip install boto3
+
+# Run upload script
+./push_to_minio.py
 ```
 
 The script will interactively ask for MinIO connection details:
