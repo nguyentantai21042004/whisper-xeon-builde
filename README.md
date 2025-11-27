@@ -53,6 +53,14 @@ After building, you'll find the following structure:
 
 ```
 artifacts/
+├── whisper_base_xeon/
+│   ├── libwhisper.so          # Main whisper library
+│   ├── libggml.so.0           # GGML computation library
+│   ├── libggml-base.so.0      # GGML base library
+│   ├── libggml-cpu.so.0       # GGML CPU backend
+│   ├── ggml-base-q5_1.bin     # Quantized base model
+│   └── README.md              # Usage instructions
+│
 ├── whisper_small_xeon/
 │   ├── libwhisper.so          # Main whisper library
 │   ├── libggml.so.0           # GGML computation library
@@ -198,6 +206,11 @@ This build includes the following Xeon-specific optimizations:
 - **Q5_1 Quantization**: 5-bit quantization with reduced memory footprint
 
 ## Model Information
+
+### Base Model
+- Parameters: ~74M
+- Memory: ~60 MB (quantized)
+- Best for: Balanced performance, moderate accuracy requirements
 
 ### Small Model
 - Parameters: ~244M

@@ -8,6 +8,14 @@ Sau khi build, artifacts được lưu trên MinIO với cấu trúc:
 
 ```
 whisper-artifacts/
+├── whisper_base_xeon/
+│   ├── libwhisper.so          # Thư viện Whisper C++ (540 KB)
+│   ├── libggml.so.0           # GGML core (47 KB)
+│   ├── libggml-base.so.0      # GGML base (625 KB)
+│   ├── libggml-cpu.so.0       # GGML CPU backend (649 KB)
+│   ├── ggml-base-q5_1.bin     # Model Base quantized (~60 MB)
+│   └── README.md
+│
 ├── whisper_small_xeon/
 │   ├── libwhisper.so          # Thư viện Whisper C++ (540 KB)
 │   ├── libggml.so.0           # GGML core (47 KB)
@@ -29,6 +37,7 @@ whisper-artifacts/
 
 | Model | Parameters | Quantized Size | Speed | Accuracy | Use Case |
 |-------|-----------|----------------|-------|----------|----------|
+| **Base** | ~74M | 60 MB | Very Fast | Moderate | Balanced performance, moderate accuracy |
 | **Small** | ~244M | 181 MB | Fast | Good | Real-time transcription, quick processing |
 | **Medium** | ~769M | 1.5 GB | Moderate | Better | Higher accuracy requirements |
 
@@ -90,8 +99,8 @@ MINIO_ACCESS_KEY = "smap"
 MINIO_SECRET_KEY = "hcmut2025"
 BUCKET_NAME = "whisper-artifacts"
 
-# Chọn model (small hoặc medium)
-MODEL_SIZE = "small"  # hoặc "medium"
+# Chọn model (base, small hoặc medium)
+MODEL_SIZE = "small"  # hoặc "base" hoặc "medium"
 
 
 def download_artifacts(model_size="small"):
@@ -159,8 +168,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         MODEL_SIZE = sys.argv[1].lower()
     
-    if MODEL_SIZE not in ["small", "medium"]:
-        print("Usage: python download_whisper_artifacts.py [small|medium]")
+    if MODEL_SIZE not in ["base", "small", "medium"]:
+        print("Usage: python download_whisper_artifacts.py [base|small|medium]")
         sys.exit(1)
     
     success = download_artifacts(MODEL_SIZE)
@@ -172,6 +181,9 @@ if __name__ == "__main__":
 ```bash
 # Cài boto3
 pip install boto3
+
+# Download Base model
+python download_whisper_artifacts.py base
 
 # Download Small model
 python download_whisper_artifacts.py small
@@ -190,6 +202,9 @@ sudo mv mc /usr/local/bin/
 
 # Configure MinIO
 mc alias set myminio http://172.16.19.115:9000 smap hcmut2025
+
+# Download Base model
+mc cp --recursive myminio/whisper-artifacts/whisper_base_xeon/ ./whisper_base_xeon/
 
 # Download Small model
 mc cp --recursive myminio/whisper-artifacts/whisper_small_xeon/ ./whisper_small_xeon/

@@ -58,6 +58,10 @@ RUN mkdir -p /app/build/bin && \
 # The download script is in models/download-ggml-model.sh
 RUN chmod +x models/download-ggml-model.sh
 
+# Download and quantize Base model
+RUN ./models/download-ggml-model.sh base \
+    && LD_LIBRARY_PATH=/app/build/ggml/src:/app/build/src:$LD_LIBRARY_PATH ./build/bin/whisper-quantize models/ggml-base.bin models/ggml-base-q5_1.bin q5_1
+
 # Download and quantize Small model
 RUN ./models/download-ggml-model.sh small \
     && LD_LIBRARY_PATH=/app/build/ggml/src:/app/build/src:$LD_LIBRARY_PATH ./build/bin/whisper-quantize models/ggml-small.bin models/ggml-small-q5_1.bin q5_1
@@ -72,14 +76,19 @@ FROM ubuntu:22.04 AS organizer
 WORKDIR /release_artifacts
 
 # Create directory structure
-RUN mkdir -p whisper_small_xeon whisper_medium_xeon
+RUN mkdir -p whisper_base_xeon whisper_small_xeon whisper_medium_xeon
 
 # Copy artifacts from builder
 # Library is located in build/src/
+COPY --from=builder /app/build/src/libwhisper.so /release_artifacts/whisper_base_xeon/
 COPY --from=builder /app/build/src/libwhisper.so /release_artifacts/whisper_small_xeon/
 COPY --from=builder /app/build/src/libwhisper.so /release_artifacts/whisper_medium_xeon/
 
 # Copy libggml dependencies
+COPY --from=builder /app/build/ggml/src/libggml.so.0 /release_artifacts/whisper_base_xeon/
+COPY --from=builder /app/build/ggml/src/libggml-base.so.0 /release_artifacts/whisper_base_xeon/
+COPY --from=builder /app/build/ggml/src/libggml-cpu.so.0 /release_artifacts/whisper_base_xeon/
+
 COPY --from=builder /app/build/ggml/src/libggml.so.0 /release_artifacts/whisper_small_xeon/
 COPY --from=builder /app/build/ggml/src/libggml-base.so.0 /release_artifacts/whisper_small_xeon/
 COPY --from=builder /app/build/ggml/src/libggml-cpu.so.0 /release_artifacts/whisper_small_xeon/
@@ -88,6 +97,7 @@ COPY --from=builder /app/build/ggml/src/libggml.so.0 /release_artifacts/whisper_
 COPY --from=builder /app/build/ggml/src/libggml-base.so.0 /release_artifacts/whisper_medium_xeon/
 COPY --from=builder /app/build/ggml/src/libggml-cpu.so.0 /release_artifacts/whisper_medium_xeon/
 
+COPY --from=builder /app/models/ggml-base-q5_1.bin /release_artifacts/whisper_base_xeon/
 COPY --from=builder /app/models/ggml-small-q5_1.bin /release_artifacts/whisper_small_xeon/
 COPY --from=builder /app/models/ggml-medium-q5_1.bin /release_artifacts/whisper_medium_xeon/
 
@@ -98,6 +108,7 @@ RUN echo '# Whisper Xeon Artifacts' > README.md && \
     echo 'This package contains Xeon-optimized Whisper artifacts (AVX2/FMA enabled) and quantized models.' >> README.md && \
     echo '' >> README.md && \
     echo '## Structure' >> README.md && \
+    echo '- `whisper_base_xeon/`: Contains `libwhisper.so` and `ggml-base-q5_1.bin`' >> README.md && \
     echo '- `whisper_small_xeon/`: Contains `libwhisper.so` and `ggml-small-q5_1.bin`' >> README.md && \
     echo '- `whisper_medium_xeon/`: Contains `libwhisper.so` and `ggml-medium-q5_1.bin`' >> README.md && \
     echo '' >> README.md && \
@@ -114,7 +125,8 @@ RUN echo '# Whisper Xeon Artifacts' > README.md && \
     echo '- libgomp1 (OpenMP runtime)' >> README.md
 
 # Copy README to subdirectories
-RUN cp README.md whisper_small_xeon/ && \
+RUN cp README.md whisper_base_xeon/ && \
+    cp README.md whisper_small_xeon/ && \
     cp README.md whisper_medium_xeon/
 
 # Generate push_to_minio.sh (Task 4)
@@ -133,6 +145,7 @@ RUN echo '#!/bin/bash' > push_to_minio.sh && \
     echo '' >> push_to_minio.sh && \
     echo '# Upload' >> push_to_minio.sh && \
     echo 'echo "Uploading artifacts to $MINIO_ALIAS/$BUCKET..."' >> push_to_minio.sh && \
+    echo 'mc cp --recursive whisper_base_xeon/ $MINIO_ALIAS/$BUCKET/whisper_base_xeon/' >> push_to_minio.sh && \
     echo 'mc cp --recursive whisper_small_xeon/ $MINIO_ALIAS/$BUCKET/whisper_small_xeon/' >> push_to_minio.sh && \
     echo 'mc cp --recursive whisper_medium_xeon/ $MINIO_ALIAS/$BUCKET/whisper_medium_xeon/' >> push_to_minio.sh && \
     echo 'echo "Upload complete."' >> push_to_minio.sh && \

@@ -33,67 +33,76 @@ def get_config():
     print("  MinIO Upload Script - Whisper Artifacts")
     print("=" * 50)
     print()
-    
+
     config = {}
-    
+
     # Read from environment or prompt
-    config['endpoint'] = os.environ.get('MINIO_IP') or get_input("MinIO Server IP", "127.0.0.1")
-    config['port'] = os.environ.get('MINIO_PORT') or get_input("MinIO Server Port", "9000")
-    config['access_key'] = os.environ.get('MINIO_ACCESS_KEY') or get_input("MinIO Access Key", "minioadmin")
-    
+    config["endpoint"] = os.environ.get("MINIO_IP") or get_input(
+        "MinIO Server IP", "127.0.0.1"
+    )
+    config["port"] = os.environ.get("MINIO_PORT") or get_input(
+        "MinIO Server Port", "9000"
+    )
+    config["access_key"] = os.environ.get("MINIO_ACCESS_KEY") or get_input(
+        "MinIO Access Key", "minioadmin"
+    )
+
     # Secret key - use getpass if available for hidden input
-    secret_key = os.environ.get('MINIO_SECRET_KEY')
+    secret_key = os.environ.get("MINIO_SECRET_KEY")
     if not secret_key:
         try:
             import getpass
-            secret_key = getpass.getpass(f"MinIO Secret Key [minioadmin]: ") or "minioadmin"
+
+            secret_key = (
+                getpass.getpass(f"MinIO Secret Key [minioadmin]: ") or "minioadmin"
+            )
         except:
             secret_key = get_input("MinIO Secret Key", "minioadmin")
-    config['secret_key'] = secret_key
-    
-    config['bucket'] = os.environ.get('BUCKET') or get_input("Bucket Name", "whisper-artifacts")
-    
-    config['endpoint_url'] = f"http://{config['endpoint']}:{config['port']}"
-    
+    config["secret_key"] = secret_key
+
+    config["bucket"] = os.environ.get("BUCKET") or get_input(
+        "Bucket Name", "whisper-artifacts"
+    )
+
+    config["endpoint_url"] = f"http://{config['endpoint']}:{config['port']}"
+
     print()
     print("Cấu hình:")
     print(f"  Server: {config['endpoint_url']}")
     print(f"  Bucket: {config['bucket']}")
     print()
-    
+
     return config
 
 
 def upload_directory(s3_client, bucket_name, local_dir, s3_prefix):
     """Upload all files from a directory to S3/MinIO."""
     local_path = Path(local_dir)
-    
+
     if not local_path.exists():
         print(f"⚠️  Thư mục không tồn tại: {local_dir}")
         return
-    
+
     files = list(local_path.glob("*"))
     if not files:
         print(f"⚠️  Không có file nào trong: {local_dir}")
         return
-    
+
     print(f"📁 Upload {local_dir}/ ({len(files)} files)...")
-    
+
     for file_path in files:
         if file_path.is_file():
             object_name = f"{s3_prefix}/{file_path.name}"
             try:
                 file_size = file_path.stat().st_size
                 size_mb = file_size / (1024 * 1024)
-                
-                print(f"  ⬆️  {file_path.name} ({size_mb:.1f} MB)...", end=" ", flush=True)
-                
-                s3_client.upload_file(
-                    str(file_path),
-                    bucket_name,
-                    object_name
+
+                print(
+                    f"  ⬆️  {file_path.name} ({size_mb:.1f} MB)...", end=" ", flush=True
                 )
-                
+
+                s3_client.upload_file(str(file_path), bucket_name, object_name)
+
                 print("✓")
             except ClientError as e:
                 print(f"✗ Lỗi: {e}")
@@ -102,24 +111,24 @@ def upload_directory(s3_client, bucket_name, local_dir, s3_prefix):
 def main():
     # Get configuration
     config = get_config()
-    
+
     # Create S3 client configured for MinIO
     print(f"🔌 Đang kết nối MinIO tại {config['endpoint_url']}...")
-    
+
     try:
         s3_client = boto3.client(
-            's3',
-            endpoint_url=config['endpoint_url'],
-            aws_access_key_id=config['access_key'],
-            aws_secret_access_key=config['secret_key'],
-            config=Config(signature_version='s3v4'),
-            region_name='us-east-1'  # MinIO doesn't care about region but boto3 needs it
+            "s3",
+            endpoint_url=config["endpoint_url"],
+            aws_access_key_id=config["access_key"],
+            aws_secret_access_key=config["secret_key"],
+            config=Config(signature_version="s3v4"),
+            region_name="us-east-1",  # MinIO doesn't care about region but boto3 needs it
         )
-        
+
         # Test connection by listing buckets
         s3_client.list_buckets()
         print("✓ Kết nối thành công!\n")
-        
+
     except ClientError as e:
         print(f"✗ Không thể kết nối: {e}")
         print("\nKiểm tra lại:")
@@ -130,16 +139,16 @@ def main():
     except Exception as e:
         print(f"✗ Lỗi: {e}")
         sys.exit(1)
-    
+
     # Create bucket if not exists
-    bucket_name = config['bucket']
+    bucket_name = config["bucket"]
     print(f"🪣 Kiểm tra bucket '{bucket_name}'...")
-    
+
     try:
         s3_client.head_bucket(Bucket=bucket_name)
         print(f"✓ Bucket đã tồn tại\n")
     except ClientError as e:
-        if e.response['Error']['Code'] == '404':
+        if e.response["Error"]["Code"] == "404":
             print(f"  Tạo bucket mới...")
             try:
                 s3_client.create_bucket(Bucket=bucket_name)
@@ -150,17 +159,21 @@ def main():
         else:
             print(f"✗ Lỗi kiểm tra bucket: {e}")
             sys.exit(1)
-    
+
     # Upload directories
     print("=" * 50)
     print("Bắt đầu upload artifacts...")
     print("=" * 50)
     print()
-    
+
+    upload_directory(s3_client, bucket_name, "whisper_base_xeon", "whisper_base_xeon")
+    print()
     upload_directory(s3_client, bucket_name, "whisper_small_xeon", "whisper_small_xeon")
     print()
-    upload_directory(s3_client, bucket_name, "whisper_medium_xeon", "whisper_medium_xeon")
-    
+    upload_directory(
+        s3_client, bucket_name, "whisper_medium_xeon", "whisper_medium_xeon"
+    )
+
     print()
     print("=" * 50)
     print("✅ Hoàn tất upload lên MinIO!")
@@ -174,4 +187,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("\n\n⚠️  Đã hủy upload")
         sys.exit(1)
-
