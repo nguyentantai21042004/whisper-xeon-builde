@@ -19,6 +19,11 @@ WORKDIR /app
 # Copy source code
 COPY . .
 
+# Patch whisper_full() to completely disable VAD functionality
+# This prevents VAD-related errors when the library is used via ctypes/FFI
+# The patch makes whisper_full() skip VAD processing entirely, regardless of params.vad value
+RUN sed -i 's/if (params.vad) {/if (false \&\& params.vad) { \/\/ VAD disabled by build/g' src/whisper.cpp
+
 # Build libwhisper.so with AVX2 and FMA optimizations
 # -DGGML_AVX2=ON and -DGGML_FMA=ON are usually default on x86, but we force them for Xeon optimization.
 # -DBUILD_SHARED_LIBS=ON to build libwhisper.so
